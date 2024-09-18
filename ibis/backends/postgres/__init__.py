@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
     import pandas as pd
     import polars as pl
-    import psycopg2
+    import psycopg
     import pyarrow as pa
 
 
@@ -90,7 +90,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         return self.connect(**kwargs)
 
     def _in_memory_table_exists(self, name: str) -> bool:
-        import psycopg2.errors
+        import psycopg.errors
 
         ident = sg.to_identifier(name, quoted=self.compiler.quoted)
         sql = sg.select(sge.convert(1)).from_(ident).limit(0).sql(self.dialect)
@@ -99,13 +99,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             with self.begin() as cur:
                 cur.execute(sql)
                 cur.fetchall()
-        except psycopg2.errors.UndefinedTable:
+        except psycopg.errors.UndefinedTable:
             return False
         else:
             return True
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        from psycopg2.extras import execute_batch
+        from psycopg.extras import execute_batch
 
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
@@ -248,12 +248,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
           year            int32
           month           int32
         """
-        import psycopg2
-        import psycopg2.extras
+        import psycopg
+        import psycopg.extras
 
-        psycopg2.extras.register_default_json(loads=lambda x: x)
+        psycopg.extras.register_default_json(loads=lambda x: x)
 
-        self.con = psycopg2.connect(
+        self.con = psycopg.connect(
             host=host,
             port=port,
             user=user,
@@ -267,7 +267,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: psycopg2.extensions.connection) -> Backend:
+    def from_connection(cls, con: psycopg.extensions.connection) -> Backend:
         """Create an Ibis client from an existing connection to a PostgreSQL database.
 
         Parameters
@@ -732,8 +732,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             yield result
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
-        import psycopg2
-        import psycopg2.extras
+        import psycopg
+        import psycopg.extras
 
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect)
@@ -743,12 +743,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
         try:
             # try to load hstore, uuid and ipaddress extensions
-            with contextlib.suppress(psycopg2.ProgrammingError):
-                psycopg2.extras.register_hstore(cursor)
-            with contextlib.suppress(psycopg2.ProgrammingError):
-                psycopg2.extras.register_uuid(conn_or_curs=cursor)
-            with contextlib.suppress(psycopg2.ProgrammingError):
-                psycopg2.extras.register_ipaddress(cursor)
+            with contextlib.suppress(psycopg.ProgrammingError):
+                psycopg.extras.register_hstore(cursor)
+            with contextlib.suppress(psycopg.ProgrammingError):
+                psycopg.extras.register_uuid(conn_or_curs=cursor)
+            with contextlib.suppress(psycopg.ProgrammingError):
+                psycopg.extras.register_ipaddress(cursor)
         except Exception:
             cursor.close()
             raise
