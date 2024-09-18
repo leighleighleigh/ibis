@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 import inspect
 from operator import itemgetter
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union
 from urllib.parse import unquote_plus
 
 import sqlglot as sg
@@ -457,9 +457,32 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             .where(*predicates)
         )
 
-        def split_name_type(arg: str) -> tuple[str, dt.DataType]:
-            name, typ = arg.split(" ", 1)
-            return name, self.compiler.type_mapper.from_string(typ)
+        def split_name_type(arg: str) -> tuple[str, dt.DataType, Union[inspect.Parameter.empty,Any]]:
+            name, typ_str = arg.split(" ", 1)
+
+            # variables which have no default value, such as positional-only parameters, 
+            # are assigned 'inspect.Parameter.empty' as their default.
+            # https://docs.python.org/3/library/inspect.html#inspect.Parameter.default
+            typ_default = inspect.Parameter.empty
+            typ_default_str = None
+
+            # split 'type' by spaces, and check if any part is equal exactly to DEFAULT
+            typ_str_split = typ_str.split(" ")
+
+            if 'DEFAULT' in typ_str_split:
+                dindex = typ_str_split.index('DEFAULT')
+                # take the type before the DEFAULT statement, and the default after it.
+                typ_str = ' '.join(typ_str_split[0:dindex])
+                typ_default_str = ' '.join(typ_str_split[dindex+1:])
+            
+            # parse the type string to a ibis type, then use that to cast the typ_default value
+            typ = self.compiler.type_mapper.from_string(typ_str)
+
+            # If we found a default value, cast it into a python one 
+            #if typ_default_str is not None:
+                #typ_default = typ.to_pandas().type(typ_default_str)
+
+            return name, typ, typ_default
 
         with self._safe_raw_sql(query) as cur:
             rows = cur.fetchall()
@@ -469,7 +492,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             raise exc.MissingUDFError(name)
         elif len(rows) > 1:
             raise exc.AmbiguousUDFError(name)
-
+        
         [(raw_return_type, signature)] = rows
         return_type = self.compiler.type_mapper.from_string(raw_return_type)
         signature = list(map(split_name_type, signature))
@@ -481,13 +504,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         fake_func.__signature__ = inspect.Signature(
             [
                 inspect.Parameter(
-                    name, kind=inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=typ
+                    name, kind=(inspect.Parameter.POSITIONAL_OR_KEYWORD if typ_default == inspect.Parameter.empty else inspect.Parameter.KEYWORD_ONLY), annotation=typ, default=typ_default
                 )
-                for name, typ in signature
+                for name, typ, typ_default in signature
             ],
             return_annotation=return_type,
         )
-        fake_func.__annotations__ = {"return": return_type, **dict(signature)}
+        fake_func.__annotations__ = {"return": return_type, **dict([x[0:2] for x in signature])}
         op = ops.udf.scalar.builtin(fake_func, database=database)
         return op
 
