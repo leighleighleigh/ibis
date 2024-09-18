@@ -105,7 +105,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             return True
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        from psycopg.extras import execute_batch
+        #from psycopg.extras import execute_batch # replaced with executemany
 
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
@@ -144,7 +144,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
         with self.begin() as cur:
             cur.execute(create_stmt_sql)
-            execute_batch(cur, sql, data, 128)
+            cur.executemany(sql, data)
 
     @contextlib.contextmanager
     def begin(self):
@@ -167,7 +167,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
         try:
             df = pd.DataFrame.from_records(
-                cursor, columns=schema.names, coerce_float=True
+                cursor.fetchall(), columns=schema.names, coerce_float=True
             )
         except Exception:
             # clean up the cursor if we fail to create the DataFrame
@@ -249,9 +249,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
           month           int32
         """
         import psycopg
-        import psycopg.extras
+        #import psycopg.extras
 
-        psycopg.extras.register_default_json(loads=lambda x: x)
+        #psycopg.extras.register_default_json(loads=lambda x: x)
 
         self.con = psycopg.connect(
             host=host,
@@ -733,7 +733,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         import psycopg
-        import psycopg.extras
+        #import psycopg.extras
 
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect)
@@ -741,17 +741,17 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         con = self.con
         cursor = con.cursor()
 
-        try:
-            # try to load hstore, uuid and ipaddress extensions
-            with contextlib.suppress(psycopg.ProgrammingError):
-                psycopg.extras.register_hstore(cursor)
-            with contextlib.suppress(psycopg.ProgrammingError):
-                psycopg.extras.register_uuid(conn_or_curs=cursor)
-            with contextlib.suppress(psycopg.ProgrammingError):
-                psycopg.extras.register_ipaddress(cursor)
-        except Exception:
-            cursor.close()
-            raise
+        #try:
+        #    # try to load hstore, uuid and ipaddress extensions
+        #    with contextlib.suppress(psycopg.ProgrammingError):
+        #        psycopg.extras.register_hstore(cursor)
+        #    with contextlib.suppress(psycopg.ProgrammingError):
+        #        psycopg.extras.register_uuid(conn_or_curs=cursor)
+        #    with contextlib.suppress(psycopg.ProgrammingError):
+        #        psycopg.extras.register_ipaddress(cursor)
+        #except Exception:
+        #    cursor.close()
+        #    raise
 
         try:
             cursor.execute(query, **kwargs)
