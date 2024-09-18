@@ -103,16 +103,16 @@ except ImportError:
     TrinoUserError = None
 
 try:
-    from psycopg2.errors import DivisionByZero as PsycoPg2DivisionByZero
-    from psycopg2.errors import IndeterminateDatatype as PsycoPg2IndeterminateDatatype
-    from psycopg2.errors import InternalError_ as PsycoPg2InternalError
-    from psycopg2.errors import (
+    from psycopg.errors import DivisionByZero as PsycoPg2DivisionByZero
+    from psycopg.errors import IndeterminateDatatype as PsycoPg2IndeterminateDatatype
+    from psycopg.errors import InternalError_ as PsycoPg2InternalError
+    from psycopg.errors import (
         InvalidTextRepresentation as PsycoPg2InvalidTextRepresentation,
     )
-    from psycopg2.errors import OperationalError as PsycoPg2OperationalError
-    from psycopg2.errors import ProgrammingError as PsycoPg2ProgrammingError
-    from psycopg2.errors import SyntaxError as PsycoPg2SyntaxError
-    from psycopg2.errors import UndefinedObject as PsycoPg2UndefinedObject
+    from psycopg.errors import OperationalError as PsycoPg2OperationalError
+    from psycopg.errors import ProgrammingError as PsycoPg2ProgrammingError
+    from psycopg.errors import SyntaxError as PsycoPg2SyntaxError
+    from psycopg.errors import UndefinedObject as PsycoPg2UndefinedObject
 except ImportError:
     PsycoPg2SyntaxError = PsycoPg2IndeterminateDatatype = (
         PsycoPg2InvalidTextRepresentation

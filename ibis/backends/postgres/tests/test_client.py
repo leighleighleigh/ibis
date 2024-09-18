@@ -33,7 +33,7 @@ import ibis.expr.types as ir
 from ibis.backends.tests.errors import PsycoPg2OperationalError
 from ibis.util import gen_name
 
-pytest.importorskip("psycopg2")
+pytest.importorskip("psycopg")
 
 POSTGRES_TEST_DB = os.environ.get("IBIS_TEST_POSTGRES_DATABASE", "ibis_testing")
 IBIS_POSTGRES_HOST = os.environ.get("IBIS_TEST_POSTGRES_HOST", "localhost")

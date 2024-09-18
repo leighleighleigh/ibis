@@ -5,10 +5,10 @@ from __future__ import annotations
 from operator import itemgetter
 from typing import TYPE_CHECKING
 
-import psycopg2
+import psycopg
 import sqlglot as sg
 import sqlglot.expressions as sge
-from psycopg2 import extras
+from psycopg import extras
 
 import ibis
 import ibis.backends.sql.compilers as sc
@@ -110,7 +110,7 @@ class Backend(PostgresBackend):
           month           int32
         """
 
-        self.con = psycopg2.connect(
+        self.con = psycopg.connect(
             host=host,
             port=port,
             user=user,
@@ -263,7 +263,7 @@ class Backend(PostgresBackend):
         ).to_expr()
 
     def _in_memory_table_exists(self, name: str) -> bool:
-        import psycopg2.errors
+        import psycopg.errors
 
         ident = sg.to_identifier(name, quoted=self.compiler.quoted)
         sql = sg.select(sge.convert(1)).from_(ident).limit(0).sql(self.dialect)
@@ -272,7 +272,7 @@ class Backend(PostgresBackend):
             with self.begin() as cur:
                 cur.execute(sql)
                 cur.fetchall()
-        except psycopg2.errors.InternalError:
+        except psycopg.errors.InternalError:
             return False
         else:
             return True

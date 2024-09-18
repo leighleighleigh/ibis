@@ -17,7 +17,7 @@ import ibis.expr.types as ir
 from ibis import config
 from ibis import literal as L
 
-pytest.importorskip("psycopg2")
+pytest.importorskip("psycopg")
 
 
 @pytest.mark.parametrize(
